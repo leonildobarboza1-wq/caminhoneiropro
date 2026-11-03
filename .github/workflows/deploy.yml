@@ -1,0 +1,33 @@
+name: Auto Post Blog
+
+on:
+  schedule:
+    - cron: '0 9,13,18 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests google-genai
+
+      - name: Run Robot Content Generator
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLOG_ID: ${{ secrets.BLOG_ID }}
+          B_CLIENT_ID: ${{ secrets.B_CLIENT_ID }}
+          B_CLIENT_SECRET: ${{ secrets.B_CLIENT_SECRET }}
+          B_REFRESH_TOKEN: ${{ secrets.B_REFRESH_TOKEN }}
+        run: |
+          python robo_conteudo.py
