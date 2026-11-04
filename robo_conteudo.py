@@ -34,24 +34,17 @@ def obter_access_token(client_id, client_secret, refresh_token):
         logging.error("Erro ao renovar o Access Token.")
         raise e
 
-def gerar_banner_exclusivo(titulo_vaga):
-    """Gera um banner visual exclusivo em HTML/CSS para a postagem, evitando plágio e repetições"""
-    cores_fundo = [
-        "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
-        "linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)",
-        "linear-gradient(135deg, #374151 0%, #1f2937 100%)",
-        "linear-gradient(135deg, #111827 0%, #030712 100%)"
+def obter_imagem_hd_caminhao():
+    """Pool exclusivo de fotos reais de caminhões pesados e carretas para garantir a miniatura no Blogger"""
+    urls_caminhoes = [
+        "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1519219788528-76f50567e722?auto=format&fit=crop&w=1200&q=85"
     ]
-    gradiente = random.choice(cores_fundo)
-    
-    banner_html = f'''
-    <div style="background: {gradiente}; color: #ffffff; padding: 35px 20px; border-radius: 8px; text-align: center; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
-        <span style="background-color: #f59e0b; color: #000; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 4px; text-transform: uppercase;">Portal Emprego para Motorista</span>
-        <h2 style="color: #ffffff; font-size: 22px; margin-top: 15px; margin-bottom: 10px; line-height: 1.4;">{titulo_vaga}</h2>
-        <p style="color: #9ca3af; font-size: 14px; margin: 0;">Oportunidade Verificada • CNH D / E • Todo o Brasil</p>
-    </div>
-    '''
-    return banner_html
+    return random.choice(urls_caminhoes)
 
 def gerar_conteudo_com_gemini(api_key):
     if not genai:
@@ -72,12 +65,12 @@ def gerar_conteudo_com_gemini(api_key):
     prompt = (
         f"Você é um especialista em recrutamento rodoviário no Brasil. "
         f"Gere um artigo estruturado em HTML com 4 vagas recentes de emprego para motoristas de caminhão (CNH D e E). "
-        f"Dê destaque especial ao setor: '{segmento_sorteado}', mas inclua vagas de outras áreas. "
-        f"Cubra diferentes regiões do Brasil (Sul, Sudeste, Centro-Oeste, Nordeste e Norte). "
-        f"Para cada vaga, inclua: Cargo/Função, Categoria de CNH obrigatória, Requisitos (MOPP, EAR, experiência), "
-        f"Tipo de Rota (Interestadual, Estadual ou Urbana) e Benefícios / Média Salarial estimada. "
+        f"Dê destaque especial ao setor: '{segmento_sorteado}', mas inclua vagas de outras áreas em diversas regiões do Brasil. "
+        f"REGRA OBRIGATÓRIA: Para cada vaga, inclua obrigatoriamente o contato direto de recrutamento da empresa anunciante "
+        f"(ex: e-mail de RH, telefone/WhatsApp corporativo ou site oficial de carreiras). "
+        f"Inclua também: Cargo, Categoria de CNH, Requisitos (MOPP, EAR) e Tipo de Rota. "
         f"Escreva em HTML limpo utilizando tags <h3> para os títulos das vagas, listas <ul> para os detalhes e <p> para a descrição. "
-        f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título chamativo focado em vagas de caminhoneiro no Brasil) e 'html' (o conteúdo HTML)."
+        f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título atrativo focado em vagas de caminhoneiro) e 'html' (conteúdo HTML)."
     )
     
     try:
@@ -128,14 +121,14 @@ def main():
 
     fuso_br = zoneinfo.ZoneInfo("America/Sao_Paulo")
     agora = datetime.now(fuso_br)
-    data_formatada = agorar_str = agora.strftime("%d/%m/%Y")
+    data_formatada = agora.strftime("%d/%m/%Y")
     data_limite = (agora - timedelta(days=7)).strftime("%d/%m/%Y")
 
     titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini)
     titulo_final = titulo_ia if titulo_ia else f"Vagas Abertas para Caminhoneiros no Brasil - {data_formatada}"
     
-    # Gera um banner visual exclusivo e único para evitar plágios e repetições
-    banner_visual = gerar_banner_exclusivo(titulo_final)
+    # Imagem real de caminhão para garantir a miniatura perfeita no Blogger
+    imagem_url = obter_imagem_hd_caminhao()
 
     aviso_validade = f'''
     <div style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin-bottom: 20px; font-size: 14px; color: #856404;">
@@ -143,15 +136,22 @@ def main():
     </div>
     '''
 
+    conteudo_hero = f'''
+    <div class="article-hero" style="margin-bottom: 20px;">
+        <img src="{imagem_url}" alt="{titulo_final}" style="width: 100%; max-height: 480px; object-fit: cover; border-radius: 8px;" />
+    </div>
+    '''
+
+    # Botão atualizado com o seu link exato do Grupo de Vagas do Facebook
     botao_grupo = '''
     <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
-        <a href="https://facebook.com" target="_blank" style="background-color: #0d6efd; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: bold; border-radius: 5px; font-size: 16px; display: inline-block;">
-            👉 Aceda ao Nosso Grupo de Vagas para Motoristas
+        <a href="https://www.facebook.com/groups/1162878270485862" target="_blank" style="background-color: #1877f2; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: bold; border-radius: 5px; font-size: 16px; display: inline-block;">
+            👉 Participe do Nosso Grupo de Vagas no Facebook
         </a>
     </div>
     '''
 
-    conteudo_final = aviso_validade + banner_visual + (html_ia if html_ia else "<p>Confira as vagas abertas.</p>") + botao_grupo
+    conteudo_final = aviso_validade + conteudo_hero + (html_ia if html_ia else "<p>Confira as vagas abertas.</p>") + botao_grupo
 
     access_token = obter_access_token(client_id, client_secret, refresh_token)
     postar_no_blogger(blog_id, access_token, titulo_final, conteudo_final)
