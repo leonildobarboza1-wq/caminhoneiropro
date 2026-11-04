@@ -26,9 +26,9 @@ jobs:
       - name: Run Robot Content Generator
         env:
           BLOG_ID: ${{ secrets.BLOG_ID }}
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
-          BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
-          BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+          GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLOGGER_CLIENT_ID: ${{ secrets.B_CLIENT_ID }}
+          BLOGGER_CLIENT_SECRET: ${{ secrets.B_CLIENT_SECRET }}
+          BLOGGER_REFRESH_TOKEN: ${{ secrets.B_REFRESH_TOKEN }}
         run: |
           python robo_conteudo.py
