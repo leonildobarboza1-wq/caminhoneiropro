@@ -2,7 +2,8 @@ name: Auto Post Blog
 
 on:
   schedule:
-    - cron: '0 9,13,18 * * *'
+    # Executa todos os dias às 19:00 (Horário de Brasília / 22:00 UTC)
+    - cron: '0 22 * * *'
   workflow_dispatch:
 
 jobs:
