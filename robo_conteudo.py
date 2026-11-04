@@ -35,7 +35,7 @@ def obter_access_token(client_id, client_secret, refresh_token):
         raise e
 
 def obter_imagem_hd_caminhao():
-    """Pool exclusivo de fotos reais de caminhões pesados e carretas para garantir a miniatura no Blogger"""
+    """Pool exclusivo de fotos reais de caminhões para garantir a miniatura automática no Blogger"""
     urls_caminhoes = [
         "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=85",
@@ -46,32 +46,41 @@ def obter_imagem_hd_caminhao():
     ]
     return random.choice(urls_caminhoes)
 
-def gerar_conteudo_com_gemini(api_key):
+def gerar_conteudo_com_gemini(api_key, transcricao_shorts=None):
     if not genai:
         return None, None
     
-    segmentos = [
-        "Agronegócio e Grãos (Bitrem, Rodotrem, Caçamba)",
-        "Carga Geral e E-commerce (Baú, Sider, Truck)",
-        "Produtos Perigosos e Tanque (Combustíveis - MOPP)",
-        "Distribuição Urbana e Carga Leve (Toco, VUC)",
-        "Transporte de Cargas Pesadas e Excedentes (Prancha)",
-        "Logística Frigorificada e Rodo-fluvial"
-    ]
-    
-    segmento_sorteado = random.choice(segmentos)
-    
     client = genai.Client(api_key=api_key)
-    prompt = (
-        f"Você é um especialista em recrutamento rodoviário no Brasil. "
-        f"Gere um artigo estruturado em HTML com 4 vagas recentes de emprego para motoristas de caminhão (CNH D e E). "
-        f"Dê destaque especial ao setor: '{segmento_sorteado}', mas inclua vagas de outras áreas em diversas regiões do Brasil. "
-        f"REGRA OBRIGATÓRIA: Para cada vaga, inclua obrigatoriamente o contato direto de recrutamento da empresa anunciante "
-        f"(ex: e-mail de RH, telefone/WhatsApp corporativo ou site oficial de carreiras). "
-        f"Inclua também: Cargo, Categoria de CNH, Requisitos (MOPP, EAR) e Tipo de Rota. "
-        f"Escreva em HTML limpo utilizando tags <h3> para os títulos das vagas, listas <ul> para os detalhes e <p> para a descrição. "
-        f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título atrativo focado em vagas de caminhoneiro) e 'html' (conteúdo HTML)."
-    )
+    
+    if transcricao_shorts:
+        # Modo de reescrita anti-plágio de Shorts do YouTube
+        prompt = (
+            f"Com base nas informações de vagas contidas na seguinte transcrição de um vídeo curto de recrutamento: '{transcricao_shorts}', "
+            f"crie um artigo de blog totalmente original, reescrito com outras palavras, sem mencionar de forma alguma a fonte, o vídeo ou o canal de origem[cite: 1]. "
+            f"O artigo deve apresentar claramente a oportunidade para motoristas (ex: CNH exigida, requisitos como EAR/MOPP, região e contatos para envio de currículo). "
+            f"Estruture o texto em HTML limpo com tags <h3> para os títulos, listas <ul> para os detalhes e <p> para a descrição. "
+            f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título atrativo de vaga de emprego) e 'html' (conteúdo HTML)."
+        )
+    else:
+        # Modo padrão de curadoria diária de vagas
+        segmentos = [
+            "Agronegócio e Grãos (Bitrem, Rodotrem, Caçamba)",
+            "Carga Geral e E-commerce (Baú, Sider, Truck)",
+            "Produtos Perigosos e Tanque (Combustíveis - MOPP)",
+            "Distribuição Urbana e Carga Leve (Toco, VUC)",
+            "Transporte de Cargas Pesadas e Excedentes (Prancha)",
+            "Logística Frigorificada e Rodo-fluvial"
+        ]
+        segmento_sorteado = random.choice(segmentos)
+        prompt = (
+            f"Você é um especialista em recrutamento rodoviário no Brasil. "
+            f"Gere um artigo estruturado em HTML com 4 vagas recentes de emprego para motoristas de caminhão (CNH D e E). "
+            f"Dê destaque especial ao setor: '{segmento_sorteado}', mas inclua vagas de outras áreas em diversas regiões do Brasil. "
+            f"⚠️ REGRA OBRIGATÓRIA: Para CADA uma das vagas apresentadas, inclua obrigatoriamente os meios de contato diretos "
+            f"da empresa anunciante (ex: E-mail específico de RH, WhatsApp corporativo ou site oficial de carreiras). "
+            f"Escreva em HTML limpo utilizando tags <h3> para os títulos das vagas, listas <ul> para os detalhes e <p> para a descrição. "
+            f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título atrativo focado em vagas de caminhoneiro) e 'html' (conteúdo HTML)."
+        )
     
     try:
         response = client.models.generate_content(
@@ -124,10 +133,25 @@ def main():
     data_formatada = agora.strftime("%d/%m/%Y")
     data_limite = (agora - timedelta(days=7)).strftime("%d/%m/%Y")
 
-    titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini)
+    # Exemplo de transcrição de Short capturada do canal de referência para teste/execução pontual
+    # (Pode definir como None nos dias normais ou injetar a transcrição do vídeo pretendido)
+    transcricao_exemplo = (
+        "Motorista de distribuição, se você tem a categoria B ou D, a empresa está com oportunidade para você. "
+        "Acesse o site oficial indicado no canal para ver os requisitos e fazer a inscrição no processo seletivo."
+    )
+
+    # Lógica de seleção: 1 vez por semana (ex: à quarta-feira, dia da semana 2) podemos processar via Shorts
+    dia_da_semana = agora.weekday()
+    usar_shorts = (dia_da_semana == 2) # Quarta-feira foca no Short do YouTube
+
+    if usar_shorts:
+        logging.info("Modo ativado: Convertendo Short do YouTube em postagem original.")
+        titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini, transcricao_shorts=transcricao_exemplo)
+    else:
+        titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini, transcricao_shorts=None)
+
     titulo_final = titulo_ia if titulo_ia else f"Vagas Abertas para Caminhoneiros no Brasil - {data_formatada}"
     
-    # Imagem real de caminhão para garantir a miniatura perfeita no Blogger
     imagem_url = obter_imagem_hd_caminhao()
 
     aviso_validade = f'''
@@ -142,11 +166,10 @@ def main():
     </div>
     '''
 
-    # Botão atualizado com o seu link exato do Grupo de Vagas do Facebook
     botao_grupo = '''
     <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
         <a href="https://www.facebook.com/groups/1162878270485862" target="_blank" style="background-color: #1877f2; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: bold; border-radius: 5px; font-size: 16px; display: inline-block;">
-            👉 Participe do Nosso Grupo de Vagas no Facebook
+            👉 Participe do Nosso Grupo Oficial de Vagas no Facebook
         </a>
     </div>
     '''
