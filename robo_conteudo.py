@@ -35,45 +35,43 @@ def obter_access_token(client_id, client_secret, refresh_token):
         raise e
 
 def obter_imagem_hd_caminhao():
-    """Pool diversificado de fotos de caminhões e estradas brasileiras"""
-    ids_caminhoes = [
-        "1586528116311-ad8dd3c8310d", # Carreta na estrada
-        "1544620347-c4fd4a3d5957",    # Caminhão pesado de carga
-        "1519003722824-194d4455a60c", # Rodovia de escoamento
-        "1563720223185-11003d516935", # Caminhão em viagem
-        "1508873696983-2df5c92063c7", # Logística de transporte
-        "1601584115197-04ecc0da31d7"  # Bitrem / Carreta
+    """Pool exclusivo e estrito de fotos de camiões pesados e carretas nas rodovias"""
+    # Links diretos seguros de fotos de camiões de alta qualidade
+    urls_caminhoes = [
+        "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1519219788528-76f50567e722?auto=format&fit=crop&w=1200&q=85"
     ]
-    foto_id = random.choice(ids_caminhoes)
-    rand_seed = random.randint(100, 9999)
-    return f"https://images.unsplash.com/photo-{foto_id}?auto=format&fit=crop&w=1200&q=85&sig={rand_seed}"
+    return random.choice(urls_caminhoes)
 
 def gerar_conteudo_com_gemini(api_key):
     if not genai:
         return None, None
     
-    # Lista de segmentos para diversificar as postagens
     segmentos = [
         "Agronegócio e Grãos (Bitrem, Rodotrem, Caçamba)",
-        "Carga Geral e E-commerce (Baú, Sider, Truck e 3/4)",
-        "Produtos Perigosos e Tanque (Combustíveis e Químicos - MOPP)",
-        "Distribuição Urbana e Carga Leve (Toco, Accelo, VUC)",
-        "Transporte de Veículos e Cargas Excedentes (Cegonheiro, Prancha)",
-        "Construção Civil e Mineração (Caçamba, Traçado)"
+        "Carga Geral e E-commerce (Baú, Sider, Truck)",
+        "Produtos Perigosos e Tanque (Combustíveis - MOPP)",
+        "Distribuição Urbana e Carga Leve (Toco, VUC)",
+        "Transporte de Cargas Pesadas e Excedentes (Prancha)",
+        "Logística Frigorificada e Rodo-fluvial"
     ]
     
     segmento_sorteado = random.choice(segmentos)
     
     client = genai.Client(api_key=api_key)
     prompt = (
-        f"Você é um especialista em recrutamento para o setor de transporte rodoviário de cargas no Brasil. "
-        f"Gere um artigo estruturado em HTML com 4 vagas recentes de emprego para motoristas de caminhão. "
-        f"Dê destaque especial ao segmento: '{segmento_sorteado}', mas inclua também oportunidades de outras categorias. "
-        f"Abranja diferentes regiões do Brasil (ex: SP, MG, PR, MT, GO, BA, SC, RS, etc.). "
-        f"Para cada vaga, informe: Cargo/Função, Categoria de CNH (C, D ou E), Requisitos (MOPP, EAR, experiência), "
-        f"Tipo de Rota (Estadual, Interestadual ou Urbana) e Benefícios/Média Salarial. "
-        f"Escreva em HTML limpo com tags <h3> para os títulos das vagas, listas <ul> para os detalhes e <p> para a descrição. "
-        f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título chamativo focado em vagas de caminhoneiro) e 'html' (o conteúdo HTML)."
+        f"Você é um especialista em recrutamento rodoviário no Brasil. "
+        f"Gere um artigo estruturado em HTML com 4 vagas recentes de emprego para motoristas de caminhão (CNH D e E). "
+        f"Dê destaque especial ao setor: '{segmento_sorteado}', mas inclua vagas de outras áreas. "
+        f"Cubra diferentes regiões do Brasil (Sul, Sudeste, Centro-Oeste, Nordeste e Norte). "
+        f"Para cada vaga, inclua: Cargo/Função, Categoria de CNH obrigatória, Requisitos (MOPP, EAR, experiência), "
+        f"Tipo de Rota (Interestadual, Estadual ou Urbana) e Benefícios / Média Salarial estimada. "
+        f"Escreva em HTML limpo utilizando tags <h3> para os títulos das vagas, listas <ul> para os detalhes e <p> para a descrição. "
+        f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título chamativo focado em vagas de caminhoneiro no Brasil) e 'html' (o conteúdo HTML)."
     )
     
     try:
@@ -128,8 +126,9 @@ def main():
     data_limite = (agora - timedelta(days=7)).strftime("%d/%m/%Y")
 
     titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini)
-    titulo_final = titulo_ia if titulo_ia else f"Vagas de Emprego para Caminhoneiros no Brasil - {data_formatada}"
+    titulo_final = titulo_ia if titulo_ia else f"Vagas Abertas para Caminhoneiros no Brasil - {data_formatada}"
     
+    # Imagem 100% garantida de caminhão
     imagem_url = obter_imagem_hd_caminhao()
 
     aviso_validade = f'''
@@ -144,11 +143,10 @@ def main():
     </div>
     '''
 
-    # Botão de chamada para redes sociais / grupos de vagas
     botao_grupo = '''
     <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
         <a href="https://facebook.com" target="_blank" style="background-color: #0d6efd; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: bold; border-radius: 5px; font-size: 16px; display: inline-block;">
-            👉 Mantenha-se Atualizado no Nosso Grupo de Vagas
+            👉 Aceda ao Nosso Grupo de Vagas para Motoristas
         </a>
     </div>
     '''
