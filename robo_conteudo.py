@@ -35,16 +35,31 @@ def obter_access_token(client_id, client_secret, refresh_token):
         raise e
 
 def obter_imagem_hd_caminhao():
-    """Pool exclusivo de fotos reais de caminhões para garantir a miniatura automática no Blogger"""
+    """Pool ampliado de fotos reais de caminhões com rotação diária automática (sem repetição consecutiva)"""
     urls_caminhoes = [
         "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1519219788528-76f50567e722?auto=format&fit=crop&w=1200&q=85"
+        "https://images.unsplash.com/photo-1519219788528-76f50567e722?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1559297483-82280d195a6f?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1508615039623-a25605d2b022?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1565793298595-6a879b1d9492?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1529400971008-f566de0e6dfc?auto=format&fit=crop&w=1200&q=85",
+        "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1200&q=85"
     ]
-    return random.choice(urls_caminhoes)
+    
+    # Seleciona a imagem com base no dia atual do ano (ex: dia 309 do ano escolhe a foto 309 % total)
+    fuso_br = zoneinfo.ZoneInfo("America/Sao_Paulo")
+    dia_do_ano = datetime.now(fuso_br).timetuple().tm_yday
+    indice = dia_do_ano % len(urls_caminhoes)
+    
+    return urls_caminhoes[indice]
 
 def gerar_conteudo_com_gemini(api_key, transcricao_shorts=None):
     if not genai:
