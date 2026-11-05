@@ -54,7 +54,6 @@ def obter_imagem_hd_caminhao():
         "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1200&q=85"
     ]
     
-    # Seleciona a imagem com base no dia atual do ano (ex: dia 309 do ano escolhe a foto 309 % total)
     fuso_br = zoneinfo.ZoneInfo("America/Sao_Paulo")
     dia_do_ano = datetime.now(fuso_br).timetuple().tm_yday
     indice = dia_do_ano % len(urls_caminhoes)
@@ -71,7 +70,7 @@ def gerar_conteudo_com_gemini(api_key, transcricao_shorts=None):
         # Modo de reescrita anti-plágio de Shorts do YouTube
         prompt = (
             f"Com base nas informações de vagas contidas na seguinte transcrição de um vídeo curto de recrutamento: '{transcricao_shorts}', "
-            f"crie um artigo de blog totalmente original, reescrito com outras palavras, sem mencionar de forma alguma a fonte, o vídeo ou o canal de origem[cite: 1]. "
+            f"crie um artigo de blog totalmente original, reescrito com outras palavras, sem mencionar de forma alguma a fonte, o vídeo ou o canal de origem. "
             f"O artigo deve apresentar claramente a oportunidade para motoristas (ex: CNH exigida, requisitos como EAR/MOPP, região e contatos para envio de currículo). "
             f"Estruture o texto em HTML limpo com tags <h3> para os títulos, listas <ul> para os detalhes e <p> para a descrição. "
             f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título atrativo de vaga de emprego) e 'html' (conteúdo HTML)."
@@ -148,14 +147,11 @@ def main():
     data_formatada = agora.strftime("%d/%m/%Y")
     data_limite = (agora - timedelta(days=7)).strftime("%d/%m/%Y")
 
-    # Exemplo de transcrição de Short capturada do canal de referência para teste/execução pontual
-    # (Pode definir como None nos dias normais ou injetar a transcrição do vídeo pretendido)
     transcricao_exemplo = (
         "Motorista de distribuição, se você tem a categoria B ou D, a empresa está com oportunidade para você. "
         "Acesse o site oficial indicado no canal para ver os requisitos e fazer a inscrição no processo seletivo."
     )
 
-    # Lógica de seleção: 1 vez por semana (ex: à quarta-feira, dia da semana 2) podemos processar via Shorts
     dia_da_semana = agora.weekday()
     usar_shorts = (dia_da_semana == 2) # Quarta-feira foca no Short do YouTube
 
@@ -164,6 +160,21 @@ def main():
         titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini, transcricao_shorts=transcricao_exemplo)
     else:
         titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini, transcricao_shorts=None)
+
+    # 🛡️ Blindagem de Segurança: Se a IA falhar ou retornar vazio, aplica conteúdo estruturado de contingência
+    if not html_ia:
+        logging.warning("Conteúdo da IA veio vazio. Aplicando estrutura de contingência.")
+        titulo_ia = f"Oportunidades e Vagas Urgentes para Caminhoneiros - {data_formatada}"
+        html_ia = (
+            "<h3>Vagas em Destaque na Região</h3>"
+            "<p>As principais transportadoras do país abriram novas oportunidades para motoristas profissionais com CNH D e E. "
+            "Há vagas voltadas para o transporte de carga geral, frigorificada e operações rodoviárias de longa distância.</p>"
+            "<ul>"
+            "<li><strong>Requisitos comuns:</strong> Categoria CNH D ou E válida, experiência comprovada em carteira e curso especializado (MOPP / EAR quando aplicável).</li>"
+            "<li><strong>Benefícios:</strong> Salário compatível com a categoria, diárias atrativas, premiações por economia e plano de saúde.</li>"
+            "</ul>"
+            "<p>Para participar dos processos seletivos e enviar o seu currículo atualizado, entre em contato através dos canais oficiais das empresas ou acompanhe as atualizações diárias em nosso portal.</p>"
+        )
 
     titulo_final = titulo_ia if titulo_ia else f"Vagas Abertas para Caminhoneiros no Brasil - {data_formatada}"
     
@@ -189,7 +200,7 @@ def main():
     </div>
     '''
 
-    conteudo_final = aviso_validade + conteudo_hero + (html_ia if html_ia else "<p>Confira as vagas abertas.</p>") + botao_grupo
+    conteudo_final = aviso_validade + conteudo_hero + html_ia + botao_grupo
 
     access_token = obter_access_token(client_id, client_secret, refresh_token)
     postar_no_blogger(blog_id, access_token, titulo_final, conteudo_final)
