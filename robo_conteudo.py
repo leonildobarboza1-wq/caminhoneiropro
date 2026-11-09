@@ -34,18 +34,20 @@ def obter_access_token(client_id, client_secret, refresh_token):
         logging.error("Erro ao renovar o Access Token.")
         raise e
 
-def obter_imagem_hd_caminhao():
-    """Retorna de forma totalmente randômica uma das três imagens genéricas de emprego/caminhão."""
+def obter_imagem_sequencial():
+    """Retorna as imagens em ordem sequencial estrita, garantindo que nunca repita a anterior."""
     urls_fixas = [
-        "https://i.postimg.cc/gj3XR5mV/Gemini-Generated-Image-7atb0f7atb0f7atb.jpg",  # Imagem 1: Frotas e Logística
-        "https://i.postimg.cc/kX9DzT7R/Gemini-Generated-Image-ewbdkeewbdkeewbd.jpg",  # Imagem 2: O Caminhoneiro
-        "https://i.postimg.cc/s2tgccnX/imagens-caminao.jpg"                           # Imagem 3: A Estrada e Vagas
+        "https://i.postimg.cc/gj3XR5mV/Gemini-Generated-Image-7atb0f7atb0f7atb.jpg",  # Imagem 1
+        "https://i.postimg.cc/kX9DzT7R/Gemini-Generated-Image-ewbdkeewbdkeewbd.jpg",  # Imagem 2
+        "https://i.postimg.cc/s2tgccnX/imagens-caminao.jpg"                           # Imagem 3
     ]
     
-    # Sorteio randômico real a cada execução do robô
-    return random.choice(urls_fixas)
+    fuso_br = zoneinfo.ZoneInfo("America/Sao_Paulo")
+    dia_do_ano = datetime.now(fuso_br).timetuple().tm_yday
+    indice = dia_do_ano % len(urls_fixas)
+    return urls_fixas[indice]
 
-def gerar_conteudo_com_gemini(api_key, transcricao_shorts=None):
+def gerar_conteudo_com_gemini(api_key):
     if not genai:
         return None, None
     
@@ -61,17 +63,15 @@ def gerar_conteudo_com_gemini(api_key, transcricao_shorts=None):
     segmento_sorteado = random.choice(segmentos)
     
     prompt = (
-        prompt = (
-        f"Atue como um especialista sênior em recursos humanos e logísticas do transporte rodoviário no Brasil. "
-        f"Escreva um artigo de orientacao profissional e guia de vagas focado no setor de: '{segmento_sorteado}'. "
+        f"Atue como um especialista sênior em recursos humanos e logística do transporte rodoviário no Brasil. "
+        f"Escreva um artigo de orientação profissional e guia de vagas focado no setor de: '{segmento_sorteado}'. "
         f"O artigo DEVE destacar 3 grandes transportadoras REAIS e consolidadas no Brasil que atuam fortemente nesse setor. "
         f"Para CADA empresa citada, estruture obrigatoriamente: "
         f"1. Nome real da transportadora e sua atuação no mercado brasileiro. "
         f"2. Tipo de frota e exigências comuns para os motoristas (ex: CNH E, MOPP, experiência). "
-        f"3. ⚠️ CANAL OFICIAL DE RECRUTAMENTO: Instrua o motorista a acessar a página oficial de 'Trabalhe Conosco' ou o site institucional real da empresa para cadastro de currículo (nunca crie e-mails falsos). "
-        f"Utilize tags <h3> para os títulos, <ul>/<li> para os detalhes e <p> para uma introdução e conclusão ricas em dicas de carreira. "
+        f"3. CANAL OFICIAL DE RECRUTAMENTO: Instrua o motorista a acessar a página oficial de 'Trabalhe Conosco' ou o portal Gupy oficial da empresa para cadastro de currículo. "
+        f"Utilize tags <h3> para os títulos, <ul>/<li> para os detalhes e <p> para a introdução e conclusão. "
         f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (título atrativo de guia de carreira) e 'html' (o código HTML completo)."
-    )
     )
     
     try:
@@ -92,7 +92,7 @@ def postar_no_blogger(blog_id, access_token, titulo, conteudo):
         "kind": "blogger#post",
         "title": titulo,
         "content": conteudo,
-        "labels": ["Vagas de Emprego", "Motoristas", "Caminhoneiros", "Emprego BR"]
+        "labels": ["Guia de Carreira", "Motoristas", "Caminhoneiros", "Grandes Frotas"]
     }
     data = json.dumps(payload).encode('utf-8')
     headers = {
@@ -122,45 +122,28 @@ def main():
 
     fuso_br = zoneinfo.ZoneInfo("America/Sao_Paulo")
     agora = datetime.now(fuso_br)
-    data_formatada = agora.strftime("%d/%m/%Y")
+    data_formatada = agorastr = agora.strftime("%d/%m/%Y")
     data_limite = (agora - timedelta(days=7)).strftime("%d/%m/%Y")
 
-    transcricao_exemplo = (
-        "Motorista de distribuição, se você tem a categoria B ou D, a empresa está com oportunidade para você. "
-        "Acesse o site oficial indicado no canal para ver os requisitos e fazer a inscrição no processo seletivo."
-    )
+    titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini)
 
-    dia_da_semana = agora.weekday()
-    usar_shorts = (dia_da_semana == 2) # Quarta-feira foca no Short do YouTube
-
-    if usar_shorts:
-        logging.info("Modo ativado: Convertendo Short do YouTube em postagem original.")
-        titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini, transcricao_shorts=transcricao_exemplo)
-    else:
-        titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini, transcricao_shorts=None)
-
-    # 🛡️ Contingência robusta caso a IA falhe
     if not html_ia:
         logging.warning("Conteúdo da IA veio vazio. Aplicando estrutura de contingência.")
-        titulo_ia = f"Oportunidades e Vagas Urgentes para Caminhoneiros - {data_formatada}"
+        titulo_ia = f"Guia de Oportunidades para Caminhoneiros nas Maiores Frotas - {data_formatada}"
         html_ia = (
-            "<h3>Vaga 1: Transportadora Rota Sul (Limeira/SP)</h3>"
-            "<p>Necessário CNH E e experiência com Carreta Sider.</p>"
-            "<ul><li><strong>Salário/Benefícios:</strong> R$ 4.500 + Diárias + Plano de Saúde.</li>"
-            "<li><strong>Contato Direto:</strong> Envie seu currículo para rh@transportadorarotasul.com.br ou WhatsApp (19) 99888-7766.</li></ul>"
-            "<h3>Vaga 2: Logística Express Brasil (Campinas/SP)</h3>"
-            "<p>Vaga para motorista CNH D com atuação em distribuição urbana (Truck).</p>"
-            "<ul><li><strong>Salário/Benefícios:</strong> R$ 3.200 + Vale Alimentação.</li>"
-            "<li><strong>Contato Direto:</strong> Envie o currículo para selecao@logisticaexpress.com.br.</li></ul>"
+            "<h3>Guia de Recrutamento: Grandes Frotas Nacionais</h3>"
+            "<p>Grandes transportadoras do país mantêm cadastros abertos para motoristas CNH D e E.</p>"
+            "<ul><li><strong>Requisitos Padrão:</strong> CNH válida com EAR e experiência comprovada.</li>"
+            "<li><strong>Como se candidatar:</strong> Acesse os portais oficiais de 'Trabalhe Conosco' das transportadoras líderes de mercado.</li></ul>"
         )
 
-    titulo_final = titulo_ia if titulo_ia else f"Vagas Abertas para Caminhoneiros no Brasil - {data_formatada}"
+    titulo_final = titulo_ia if titulo_ia else f"Guia de Vagas para Caminhoneiros - {data_formatada}"
     
-    imagem_url = obter_imagem_hd_caminhao()
+    imagem_url = obter_imagem_sequencial()
 
     aviso_validade = f'''
     <div style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin-bottom: 20px; font-size: 14px; color: #856404;">
-        <strong>⚠️ Aviso importante sobre os prazos:</strong> Oportunidades referentes à semana de <strong>{data_limite}</strong> a <strong>{data_formatada}</strong>. Vagas no setor de transportes preenchem-se rapidamente; caso o prazo tenha expirado, consulte as publicações mais recentes do portal.
+        <strong>⚠️ Aviso importante sobre os prazos:</strong> Guia de oportunidades referente à semana de <strong>{data_limite}</strong> a <strong>{data_formatada}</strong>. Oportunidades em grandes frotas possuem fluxo constante de captação de talentos.
     </div>
     '''
 
