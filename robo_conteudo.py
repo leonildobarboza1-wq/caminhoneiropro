@@ -71,8 +71,7 @@ def gerar_conteudo_com_gemini(api_key):
         f"2. Escreva uma matéria 100% autoral, utilizando uma redação totalmente nova, rica e original para evitar qualquer semelhança com textos copiados (zero plágio). "
         f"3. Destaque exatamente 3 grandes empresas ou perfis de operação reais do Brasil, especificando o tipo de veículo (ex: Bitrem, Sider, Caçamba, Tanque), requisitos de CNH/MOPP e os canais oficiais de recrutamento (como links Gupy ou páginas de Trabalhe Conosco oficiais). "
         f"4. Formate a saída obrigatoriamente em HTML limpo, utilizando tags <h3> para os títulos das empresas/seções, <ul>/<li> para os detalhes e <p> para introdução e conclusão persuasivas. "
-        f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (um título magnético, curto e otimizado para SEO) e 'html' (o código HTML estruturado do artigo)."
- )
+        f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (um título magnético, curto e otimizado para SEO) e 'html' (o código HTML estruturado do artigo).") )
     
     try:
         response = client.models.generate_content(
