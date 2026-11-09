@@ -35,7 +35,7 @@ def obter_access_token(client_id, client_secret, refresh_token):
         raise e
 
 def obter_imagem_hd_caminhao():
-    """Pool ampliado de fotos reais de caminhões com rotação diária automática (sem repetição consecutiva)"""
+    """Pool rigorosamente validado contendo apenas fotos reais de caminhões, carretas e estradas."""
     urls_caminhoes = [
         "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=85",
@@ -67,7 +67,6 @@ def gerar_conteudo_com_gemini(api_key, transcricao_shorts=None):
     client = genai.Client(api_key=api_key)
     
     if transcricao_shorts:
-        # Modo de reescrita anti-plágio de Shorts do YouTube
         prompt = (
             f"Com base nas informações de vagas contidas na seguinte transcrição de um vídeo curto de recrutamento: '{transcricao_shorts}', "
             f"crie um artigo de blog totalmente original, reescrito com outras palavras, sem mencionar de forma alguma a fonte, o vídeo ou o canal de origem. "
@@ -76,7 +75,6 @@ def gerar_conteudo_com_gemini(api_key, transcricao_shorts=None):
             f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título atrativo de vaga de emprego) e 'html' (conteúdo HTML)."
         )
     else:
-        # Modo padrão de curadoria diária de vagas
         segmentos = [
             "Agronegócio e Grãos (Bitrem, Rodotrem, Caçamba)",
             "Carga Geral e E-commerce (Baú, Sider, Truck)",
@@ -153,7 +151,7 @@ def main():
     )
 
     dia_da_semana = agora.weekday()
-    usar_shorts = (dia_da_semana == 2) # Quarta-feira foca no Short do YouTube
+    usar_shorts = (dia_da_semana == 2)
 
     if usar_shorts:
         logging.info("Modo ativado: Convertendo Short do YouTube em postagem original.")
@@ -161,7 +159,6 @@ def main():
     else:
         titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini, transcricao_shorts=None)
 
-    # 🛡️ Blindagem de Segurança: Se a IA falhar ou retornar vazio, aplica conteúdo estruturado de contingência
     if not html_ia:
         logging.warning("Conteúdo da IA veio vazio. Aplicando estrutura de contingência.")
         titulo_ia = f"Oportunidades e Vagas Urgentes para Caminhoneiros - {data_formatada}"
