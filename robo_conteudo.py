@@ -71,7 +71,7 @@ def obter_access_token(client_id, client_secret, refresh_token):
 
 
 def obter_imagem_hd_caminhao():
-    """Banco de imagens expandido e rigorosamente filtrado contendo apenas fotos reais de caminhões, estradas, carretas e painéis."""
+    """Banco de imagens rigorosamente selecionado com fotos reais e exclusivas de caminhões, carretas e estradas (seleção aleatória)."""
     urls_caminhoes = [
         "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=85",
@@ -88,22 +88,13 @@ def obter_imagem_hd_caminhao():
         "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1529400971008-f566de0e6dfc?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1554744522-850f3b47e247?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=1200&q=85"
     ]
     
-    fuso_br = zoneinfo.ZoneInfo("America/Sao_Paulo")
-    dia_do_ano = datetime.now(fuso_br).timetuple().tm_yday
-    indice = dia_do_ano % len(urls_caminhoes)
-    
-    return urls_caminhoes[indice]
-
-    
-
-    return urls_caminhoes[indice]
+    return random.choice(urls_caminhoes)
 
 
 
