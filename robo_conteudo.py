@@ -71,31 +71,24 @@ def obter_access_token(client_id, client_secret, refresh_token):
 
 
 def obter_imagem_hd_caminhao():
-    """Banco de imagens rigorosamente selecionado com fotos reais e exclusivas de caminhões, carretas e estradas (seleção aleatória)."""
-    urls_caminhoes = [
-        "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=85",
+    """Retorna alternadamente uma das três imagens genéricas de emprego/caminhão."""
+    urls_fixas = [
+        "COLOQUE_AQUI_O_LINK_DA_IMAGEM_1",  # Imagem 1: Frotas e Logística
+        "COLOQUE_AQUI_O_LINK_DA_IMAGEM_2",  # Imagem 2: O Caminhoneiro
+        "COLOQUE_AQUI_O_LINK_DA_IMAGEM_3"   # Imagem 3: A Estrada e Vagas
         "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1519219788528-76f50567e722?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1559297483-82280d195a6f?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1508615039623-a25605d2b022?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=1200&q=85",
         "https://images.unsplash.com/photo-1565793298595-6a879b1d9492?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1529400971008-f566de0e6dfc?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1554744522-850f3b47e247?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=1200&q=85"
+        "https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=1200&q=85",
     ]
     
-    return random.choice(urls_caminhoes)
-
+    # Usa a data atual para garantir alternância constante (uma por dia)
+    fuso_br = zoneinfo.ZoneInfo("America/Sao_Paulo")
+    dia_do_ano = datetime.now(fuso_br).timetuple().tm_yday
+    indice = dia_do_ano % len(urls_fixas)
+    
+    return urls_fixas[indice]
 
 
 def gerar_conteudo_com_gemini(api_key, transcricao_shorts=None):
