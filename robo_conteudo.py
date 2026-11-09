@@ -87,97 +87,50 @@ def obter_imagem_hd_caminhao():
 
 
 def gerar_conteudo_com_gemini(api_key, transcricao_shorts=None):
-
     if not genai:
-
         return None, None
-
     
-
     client = genai.Client(api_key=api_key)
-
     
-
     if transcricao_shorts:
-
-        # Modo de reescrita anti-plágio de Shorts do YouTube
-
         prompt = (
-
-            f"Com base nas informações de vagas contidas na seguinte transcrição de um vídeo curto de recrutamento: '{transcricao_shorts}', "
-
-            f"crie um artigo de blog totalmente original, reescrito com outras palavras, sem mencionar de forma alguma a fonte, o vídeo ou o canal de origem. "
-
-            f"O artigo deve apresentar claramente a oportunidade para motoristas (ex: CNH exigida, requisitos como EAR/MOPP, região e contatos para envio de currículo). "
-
-            f"Estruture o texto em HTML limpo com tags <h3> para os títulos, listas <ul> para os detalhes e <p> para a descrição. "
-
-            f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título atrativo de vaga de emprego) e 'html' (conteúdo HTML)."
-
+            f"Com base nas informações de vagas contidas na seguinte transcrição: '{transcricao_shorts}', "
+            f"crie um artigo de blog original para motoristas. "
+            f"⚠️ REGRA ABSOLUTA: Inclua obrigatoriamente um meio de contato direto (E-mail de RH, WhatsApp ou Link do site de carreiras) para CADA vaga apresentada. "
+            f"Estruture em HTML limpo com <h3> para títulos, <ul> para detalhes e <p> para a descrição. "
+            f"Retorne APENAS um JSON válido com duas chaves: 'titulo' e 'html'."
         )
-
     else:
-
-        # Modo padrão de curadoria diária de vagas
-
         segmentos = [
-
             "Agronegócio e Grãos (Bitrem, Rodotrem, Caçamba)",
-
             "Carga Geral e E-commerce (Baú, Sider, Truck)",
-
             "Produtos Perigosos e Tanque (Combustíveis - MOPP)",
-
             "Distribuição Urbana e Carga Leve (Toco, VUC)",
-
             "Transporte de Cargas Pesadas e Excedentes (Prancha)",
-
             "Logística Frigorificada e Rodo-fluvial"
-
         ]
-
         segmento_sorteado = random.choice(segmentos)
-
         prompt = (
-
             f"Você é um especialista em recrutamento rodoviário no Brasil. "
-
-            f"Gere um artigo estruturado em HTML com 4 vagas recentes de emprego para motoristas de caminhão (CNH D e E). "
-
-            f"Dê destaque especial ao setor: '{segmento_sorteado}', mas inclua vagas de outras áreas em diversas regiões do Brasil. "
-
-            f"⚠️ REGRA OBRIGATÓRIA: Para CADA uma das vagas apresentadas, inclua obrigatoriamente os meios de contato diretos "
-
-            f"da empresa anunciante (ex: E-mail específico de RH, WhatsApp corporativo ou site oficial de carreiras). "
-
+            f"Gere um artigo estruturado em HTML com 4 vagas recentes de emprego para motoristas de caminhão (CNH D e E), "
+            f"dando destaque ao setor: '{segmento_sorteado}'. "
+            f"⚠️ REGRA ABSOLUTA E OBRIGATÓRIA: Para CADA uma das 4 vagas apresentadas, você DEVE incluir explicitamente um meio de contato direto "
+            f"da empresa (exemplo: 'E-mail para envio de currículo: rh@transportadora.com.br' ou 'WhatsApp corporativo' ou 'Link oficial de inscrições'). "
+            f"Nunca deixe uma vaga sem canal de recrutamento. "
             f"Escreva em HTML limpo utilizando tags <h3> para os títulos das vagas, listas <ul> para os detalhes e <p> para a descrição. "
-
             f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título atrativo focado em vagas de caminhoneiro) e 'html' (conteúdo HTML)."
-
         )
-
     
-
     try:
-
         response = client.models.generate_content(
-
             model='gemini-2.5-flash',
-
             contents=prompt,
-
             config=types.GenerateContentConfig(response_mime_type="application/json")
-
         )
-
         dados = json.loads(response.text)
-
         return dados.get("titulo"), dados.get("html")
-
     except Exception as e:
-
         logging.error(f"Erro ao gerar conteúdo com o Gemini: {e}")
-
         return None, None
 
 
