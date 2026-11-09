@@ -63,15 +63,16 @@ def gerar_conteudo_com_gemini(api_key):
     segmento_sorteado = random.choice(segmentos)
     
     prompt = (
-        f"Atue como um especialista sênior em recursos humanos e logística do transporte rodoviário no Brasil. "
-        f"Escreva um artigo completo em HTML estruturado em formato de guia de carreira e oportunidades focado no setor de: '{segmento_sorteado}'. "
-        f"O artigo DEVE destacar exatamente 3 grandes transportadoras REAIS e consolidadas no Brasil que atuam nesse setor. "
-        f"Para CADA empresa citada, estruture obrigatoriamente utilizando tags <h3> para o nome da empresa, e <ul>/<li> para os detalhes: "
-        f"1. Nome real da transportadora e sua principal rota/atuação no Brasil. "
-        f"2. Exigências para os motoristas (ex: CNH E, MOPP, tempo de experiência). "
-        f"3. ⚠️ COMO SE CANDIDATAR: Instrução clara para acessar o portal oficial de 'Trabalhe Conosco' ou a página Gupy oficial da empresa. "
-        f"Adicione uma introdução e uma conclusão ricas em orientações profissionais. "
-        f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (título atrativo) e 'html' (o código HTML completo dos blocos)."
+        prompt = (
+        f"Atue como um jornalista sênior especialista em recrutamento, mercado de trabalho rodoviário e logística no Brasil. "
+        f"Sua missão é estruturar um guia de alta autoridade baseado em oportunidades reais e ativas do setor de transportes para a categoria de caminhoneiros (CNH D e E). "
+        f"Siga rigorosamente estas etapas: "
+        f"1. Selecione as principais frotas, tipos de operações e demandas reais recentes de mercado para o segmento: '{segmento_sorteado}'. "
+        f"2. Escreva uma matéria 100% autoral, utilizando uma redação totalmente nova, rica e original para evitar qualquer semelhança com textos copiados (zero plágio). "
+        f"3. Destaque exatamente 3 grandes empresas ou perfis de operação reais do Brasil, especificando o tipo de veículo (ex: Bitrem, Sider, Caçamba, Tanque), requisitos de CNH/MOPP e os canais oficiais de recrutamento (como links Gupy ou páginas de Trabalhe Conosco oficiais). "
+        f"4. Formate a saída obrigatoriamente em HTML limpo, utilizando tags <h3> para os títulos das empresas/seções, <ul>/<li> para os detalhes e <p> para introdução e conclusão persuasivas. "
+        f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (um título magnético, curto e otimizado para SEO) e 'html' (o código HTML estruturado do artigo)."
+    )
     )
     
     try:
