@@ -92,40 +92,33 @@ def gerar_conteudo_com_gemini(api_key, transcricao_shorts=None):
     
     client = genai.Client(api_key=api_key)
     
-    if transcricao_shorts:
-        prompt = (
-            f"Com base nas informações de vagas contidas na seguinte transcrição: '{transcricao_shorts}', "
-            f"crie um artigo de blog original para motoristas. "
-            f"⚠️ REGRA ABSOLUTA: Inclua obrigatoriamente um meio de contato direto (E-mail de RH, WhatsApp ou Link do site de carreiras) para CADA vaga apresentada. "
-            f"Estruture em HTML limpo com <h3> para títulos, <ul> para detalhes e <p> para a descrição. "
-            f"Retorne APENAS um JSON válido com duas chaves: 'titulo' e 'html'."
-        )
-    else:
-        segmentos = [
-            "Agronegócio e Grãos (Bitrem, Rodotrem, Caçamba)",
-            "Carga Geral e E-commerce (Baú, Sider, Truck)",
-            "Produtos Perigosos e Tanque (Combustíveis - MOPP)",
-            "Distribuição Urbana e Carga Leve (Toco, VUC)",
-            "Transporte de Cargas Pesadas e Excedentes (Prancha)",
-            "Logística Frigorificada e Rodo-fluvial"
-        ]
-        segmento_sorteado = random.choice(segmentos)
-        prompt = (
-            f"Você é um especialista em recrutamento rodoviário no Brasil. "
-            f"Gere um artigo estruturado em HTML com 4 vagas recentes de emprego para motoristas de caminhão (CNH D e E), "
-            f"dando destaque ao setor: '{segmento_sorteado}'. "
-            f"⚠️ REGRA ABSOLUTA E OBRIGATÓRIA: Para CADA uma das 4 vagas apresentadas, você DEVE incluir explicitamente um meio de contato direto "
-            f"da empresa (exemplo: 'E-mail para envio de currículo: rh@transportadora.com.br' ou 'WhatsApp corporativo' ou 'Link oficial de inscrições'). "
-            f"Nunca deixe uma vaga sem canal de recrutamento. "
-            f"Escreva em HTML limpo utilizando tags <h3> para os títulos das vagas, listas <ul> para os detalhes e <p> para a descrição. "
-            f"Retorne APENAS um JSON válido com duas chaves: 'titulo' (título atrativo focado em vagas de caminhoneiro) e 'html' (conteúdo HTML)."
-        )
+    segmentos = [
+        "Agronegócio e Grãos (Bitrem, Rodotrem, Caçamba)",
+        "Carga Geral e E-commerce (Baú, Sider, Truck)",
+        "Produtos Perigosos e Tanque (Combustíveis - MOPP)",
+        "Distribuição Urbana e Carga Leve (Toco, VUC)",
+        "Transporte de Cargas Pesadas e Excedentes (Prancha)"
+    ]
+    segmento_sorteado = random.choice(segmentos)
+    
+    prompt = (
+        f"Atue como um portal especializado em vagas de emprego para motoristas rodoviários no Brasil. "
+        f"Gere um artigo completo em HTML focado no setor de: '{segmento_sorteado}'. "
+        f"O artigo DEVE conter exatamente 3 oportunidades de emprego reais/detalhadas para motoristas CNH D ou E. "
+        f"Para CADA vaga, você DEVE estruturar as seguintes informações obrigatoriamente: "
+        f"1. Nome da Transportadora e Localidade. "
+        f"2. Tipo de Veículo / Rota. "
+        f"3. Benefícios e Faixa Salarial estimada. "
+        f"4. ⚠️ CANAL DE CONTATO DIRETO OBRIGATÓRIO: E-mail específico de recrutamento (ex: rh@transportadora.com.br) ou número de WhatsApp corporativo para envio de currículos. "
+        f"Utilize tags <h3> para os títulos das vagas, <ul> e <li> para os detalhes, e <p> para a descrição. "
+        f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (título chamativo para o blog) e 'html' (o código HTML completo do post)."
+    )
     
     try:
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt,
-            config=types.GenerateContentConfig(response_mime_type="application/json")
+            config=types.GenerateContentConfig(response_mime_type="json")
         )
         dados = json.loads(response.text)
         return dados.get("titulo"), dados.get("html")
