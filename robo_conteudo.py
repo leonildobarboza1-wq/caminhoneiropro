@@ -63,14 +63,12 @@ def gerar_conteudo_com_gemini(api_key):
     segmento_sorteado = random.choice(segmentos)
     
     prompt = (
-        f"Atue como um jornalista sênior especialista em recrutamento, mercado de trabalho rodoviário e logística no Brasil. "
-        f"Sua missão é estruturar um guia de alta autoridade baseado em oportunidades reais e ativas do setor de transportes para a categoria de caminhoneiros (CNH D e E). "
-        f"Siga rigorosamente estas etapas: "
-        f"1. Selecione as principais frotas, tipos de operações e demandas reais recentes de mercado para o segmento: '{segmento_sorteado}'. "
-        f"2. Escreva uma matéria 100% autoral, utilizando uma redação totalmente nova, rica e original para evitar qualquer semelhança com textos copiados (zero plágio). "
-        f"3. Destaque exatamente 3 grandes empresas ou perfis de operação reais do Brasil, especificando o tipo de veículo (ex: Bitrem, Sider, Caçamba, Tanque), requisitos de CNH/MOPP e os canais oficiais de recrutamento (como links Gupy ou páginas de Trabalhe Conosco oficiais). "
-        f"4. Formate a saída obrigatoriamente em HTML limpo, utilizando tags <h3> para os títulos das empresas/seções, <ul>/<li> para os detalhes e <p> para introdução e conclusão persuasivas. "
-        f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (um título magnético, curto e otimizado para SEO) e 'html' (o código HTML estruturado do artigo)."
+        f"Atue como um especialista sênior em RH e logística rodoviária. "
+        f"Escreva um guia de oportunidades para motoristas CNH D e E focado no setor de: '{segmento_sorteado}'. "
+        f"Você DEVE citar explicitamente 3 grandes empresas REAIS do Brasil neste setor. "
+        f"Para cada empresa, escreva o nome real dela, a exigência de frota e o canal oficial de recrutamento (ex: link Gupy ou portal Trabalhe Conosco). "
+        f"Retorne APENAS um JSON estrito contendo exatamente duas chaves: 'titulo' e 'html'. "
+        f"O valor de 'html' DEVE conter tags <h3> com o nome das empresas e <ul>/<li> detalhando os requisitos e o link de contato oficial."
     )
     
     try:
@@ -86,10 +84,33 @@ def gerar_conteudo_com_gemini(api_key):
             texto_resposta = texto_resposta[:-3]
             
         dados = json.loads(texto_resposta.strip())
-        return dados.get("titulo"), dados.get("html")
+        titulo = dados.get("titulo")
+        html = dados.get("html")
+        
+        # Se a IA retornar vazio, força um conteúdo real estruturado em vez de genérico
+        if not html or len(html) < 50:
+            raise ValueError("HTML retornado veio vazio ou muito curto.")
+            
+        return titulo, html
     except Exception as e:
-        logging.error(f"Erro ao gerar conteúdo com o Gemini: {e}")
-        return None, None
+        logging.error(f"Erro ao gerar com Gemini: {e}. Usando conteúdo padrão robusto com empresas reais.")
+        # Contingência rica com empresas reais caso a API falhe
+        titulo_fallback = f"Guia de Vagas e Grandes Frotas: Setor de {segmento_sorteado}"
+        html_fallback = (
+            f"<h3>1. Tegma Gestão Logística</h3>"
+            f"<p>Referência em transporte de veículos e carga industrial.</p>"
+            f"<ul><li><strong>Requisitos:</strong> CNH E com EAR e experiência comprovada.</li>"
+            f"<li><strong>Como se candidatar:</strong> Acesse o portal oficial de recrutamento em <code>tegma.gupy.io</code>.</li></ul>"
+            f"<h3>2. JBS Transportes</h3>"
+            f"<p>Atuação forte no agronegócio, carnes e cargas frigorificadas.</p>"
+            f"<ul><li><strong>Requisitos:</strong> CNH D/E e disponibilidade para viagens estaduais/interestaduais.</li>"
+            f"<li><strong>Como se candidatar:</strong> Cadastre seu currículo na seção 'Trabalhe Conosco' no site oficial da JBS ou via Gupy.</li></ul>"
+            f"<h3>3. Raízen / Logística Rodoviária</h3>"
+            f"<p>Transporte de combustíveis, granéis e derivados.</p>"
+            f"<ul><li><strong>Requisitos:</strong> CNH E obrigatória e curso MOPP atualizado.</li>"
+            f"<li><strong>Como se candidatar:</strong> Envie seus dados através do canal oficial de carreiras da Raízen.</li></ul>"
+        )
+        return titulo_fallback, html_fallback
 
 def postar_no_blogger(blog_id, access_token, titulo, conteudo):
     url = f"https://www.googleapis.com/blogger/v3/blogs/{blog_id}/posts/?isDraft=false"
