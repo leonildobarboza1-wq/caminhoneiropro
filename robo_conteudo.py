@@ -73,7 +73,6 @@ def gerar_conteudo_com_gemini(api_key):
         f"4. Formate a saída obrigatoriamente em HTML limpo, utilizando tags <h3> para os títulos das empresas/seções, <ul>/<li> para os detalhes e <p> para introdução e conclusão persuasivas. "
         f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (um título magnético, curto e otimizado para SEO) e 'html' (o código HTML estruturado do artigo)."
     )
-    )
     
     try:
         response = client.models.generate_content(
