@@ -161,82 +161,94 @@ def obter_imagem_sequencial():
 # EXTRAÇÃO E VALIDAÇÃO DO JSON DO GEMINI
 # ============================================================
 
+
 def extrair_json_resposta(texto):
     """
-    Extrai e valida o JSON produzido pelo Gemini.
-    Aceita respostas com ou sem blocos Markdown.
+    Localiza e extrai um objeto JSON mesmo quando o Gemini
+    acrescenta texto, Markdown ou explicações antes/depois.
+
+    Valida o título e o HTML antes de permitir a publicação.
     """
 
-    if not texto:
+    if not texto or not texto.strip():
         raise ValueError(
             "O Gemini retornou uma resposta vazia."
         )
 
-    texto = texto.strip()
+    texto = texto.strip().lstrip("\ufeff")
 
-    # Remove cercas Markdown, caso existam.
+    # Remove cercas Markdown, se existirem.
     texto = re.sub(
-        r"^```(?:json)?\s*",
+        r"```(?:json)?",
         "",
         texto,
         flags=re.IGNORECASE
     )
 
-    texto = re.sub(
-        r"\s*```$",
-        "",
-        texto
-    )
-
     texto = texto.strip()
 
-    # Primeira tentativa: JSON completo.
-    try:
-        dados = json.loads(texto)
+    decoder = json.JSONDecoder()
 
-    except json.JSONDecodeError:
+    dados_validos = None
 
-        # Segunda tentativa: localizar o objeto JSON.
-        inicio = texto.find("{")
-        fim = texto.rfind("}")
+    # Procura objetos JSON em qualquer posição do texto.
+    for posicao, caractere in enumerate(texto):
 
-        if inicio == -1 or fim == -1 or fim <= inicio:
-            raise ValueError(
-                "Não foi encontrado um objeto JSON válido."
+        if caractere != "{":
+            continue
+
+        try:
+
+            dados, tamanho = decoder.raw_decode(
+                texto[posicao:]
             )
 
-        dados = json.loads(
-            texto[inicio:fim + 1]
+            if not isinstance(dados, dict):
+                continue
+
+            titulo = dados.get("titulo")
+            html = dados.get("html")
+
+            if (
+                isinstance(titulo, str)
+                and titulo.strip()
+                and isinstance(html, str)
+                and html.strip()
+            ):
+
+                dados_validos = {
+                    "titulo": titulo.strip(),
+                    "html": html.strip()
+                }
+
+                break
+
+        except json.JSONDecodeError:
+            continue
+
+    if dados_validos is None:
+
+        logging.error(
+            "Resposta recebida do Gemini sem JSON válido. "
+            "Início da resposta: %r",
+            texto[:1200]
         )
 
-    if not isinstance(dados, dict):
         raise ValueError(
-            "A resposta não é um objeto JSON."
+            "Não foi encontrado um objeto JSON válido "
+            "na resposta do Gemini."
         )
 
-    titulo = dados.get("titulo")
-    html = dados.get("html")
+    # Evita publicar um resumo muito curto.
+    if len(dados_validos["html"]) < 1500:
 
-    if not isinstance(titulo, str) or not titulo.strip():
         raise ValueError(
-            "O título do artigo está ausente."
+            "O artigo gerado está muito curto: "
+            f"{len(dados_validos['html'])} caracteres."
         )
 
-    if not isinstance(html, str) or not html.strip():
-        raise ValueError(
-            "O conteúdo HTML está ausente."
-        )
+    return dados_validos
 
-    if len(html.strip()) < 1500:
-        raise ValueError(
-            "O conteúdo gerado está muito curto. "
-            "Publicação cancelada."
-        )
-
-    return {
-        "titulo": titulo.strip(),
-        "html": html.strip()
-    }
 
 
 # ============================================================
@@ -589,14 +601,34 @@ Não escreva nada fora do JSON.
 
         return artigo["titulo"], artigo["html"]
 
+    
     except Exception as erro:
 
         logging.exception(
-            "Erro ao gerar conteúdo com Gemini: %s",
+            "Erro ao gerar ou interpretar conteúdo com Gemini: %s",
             erro
         )
 
+        # Registra uma amostra da resposta para facilitar
+        # o diagnóstico de problemas futuros.
+        try:
+
+            if "response" in locals():
+
+                texto_diagnostico = response.text or ""
+
+                logging.error(
+                    "Resposta recebida do Gemini (até 1500 caracteres): %s",
+                    texto_diagnostico[:1500]
+                )
+
+        except Exception:
+            logging.error(
+                "Não foi possível recuperar a resposta para diagnóstico."
+            )
+
         return None, None
+
 
 
 # ============================================================
