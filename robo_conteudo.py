@@ -73,14 +73,9 @@ def obter_access_token(client_id, client_secret, refresh_token):
 def obter_imagem_hd_caminhao():
     """Retorna alternadamente uma das três imagens genéricas de emprego/caminhão."""
     urls_fixas = [
-        "COLOQUE_AQUI_O_LINK_DA_IMAGEM_1",  # Imagem 1: Frotas e Logística
-        "COLOQUE_AQUI_O_LINK_DA_IMAGEM_2",  # Imagem 2: O Caminhoneiro
-        "COLOQUE_AQUI_O_LINK_DA_IMAGEM_3"   # Imagem 3: A Estrada e Vagas
-        "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1565793298595-6a879b1d9492?auto=format&fit=crop&w=1200&q=85",
-        "https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=1200&q=85",
+        "https://i.postimg.cc/gj3XR5mV/Gemini-Generated-Image-7atb0f7atb0f7atb.jpg",  # Imagem 1: Frotas e Logística
+        "https://i.postimg.cc/kX9DzT7R/Gemini-Generated-Image-ewbdkeewbdkeewbd.jpg",  # Imagem 2: O Caminhoneiro
+        "https://i.postimg.cc/s2tgccnX/imagens-caminao.jpg"   # Imagem 3: A Estrada e Vagas
     ]
     
     # Usa a data atual para garantir alternância constante (uma por dia)
