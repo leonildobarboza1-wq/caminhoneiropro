@@ -64,14 +64,14 @@ def gerar_conteudo_com_gemini(api_key):
     
     prompt = (
         f"Atue como um especialista sênior em recursos humanos e logística do transporte rodoviário no Brasil. "
-        f"Escreva um artigo de orientação profissional e guia de vagas focado no setor de: '{segmento_sorteado}'. "
-        f"O artigo DEVE destacar 3 grandes transportadoras REAIS e consolidadas no Brasil que atuam fortemente nesse setor. "
-        f"Para CADA empresa citada, estruture obrigatoriamente: "
-        f"1. Nome real da transportadora e sua atuação no mercado brasileiro. "
-        f"2. Tipo de frota e exigências comuns para os motoristas (ex: CNH E, MOPP, experiência). "
-        f"3. CANAL OFICIAL DE RECRUTAMENTO: Instrua o motorista a acessar a página oficial de 'Trabalhe Conosco' ou o portal Gupy oficial da empresa para cadastro de currículo. "
-        f"Utilize tags <h3> para os títulos, <ul>/<li> para os detalhes e <p> para a introdução e conclusão. "
-        f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (título atrativo de guia de carreira) e 'html' (o código HTML completo)."
+        f"Escreva um artigo completo em HTML estruturado em formato de guia de carreira e oportunidades focado no setor de: '{segmento_sorteado}'. "
+        f"O artigo DEVE destacar exatamente 3 grandes transportadoras REAIS e consolidadas no Brasil que atuam nesse setor. "
+        f"Para CADA empresa citada, estruture obrigatoriamente utilizando tags <h3> para o nome da empresa, e <ul>/<li> para os detalhes: "
+        f"1. Nome real da transportadora e sua principal rota/atuação no Brasil. "
+        f"2. Exigências para os motoristas (ex: CNH E, MOPP, tempo de experiência). "
+        f"3. ⚠️ COMO SE CANDIDATAR: Instrução clara para acessar o portal oficial de 'Trabalhe Conosco' ou a página Gupy oficial da empresa. "
+        f"Adicione uma introdução e uma conclusão ricas em orientações profissionais. "
+        f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (título atrativo) e 'html' (o código HTML completo dos blocos)."
     )
     
     try:
@@ -80,7 +80,14 @@ def gerar_conteudo_com_gemini(api_key):
             contents=prompt,
             config=types.GenerateContentConfig(response_mime_type="json")
         )
-        dados = json.loads(response.text)
+        # Limpa eventuais marcações de bloco de código do markdown que a IA possa retornar
+        texto_resposta = response.text.strip()
+        if texto_resposta.startswith("```json"):
+            texto_resposta = texto_resposta[7:]
+        if texto_resposta.endswith("```"):
+            texto_resposta = texto_resposta[:-3]
+            
+        dados = json.loads(texto_resposta.strip())
         return dados.get("titulo"), dados.get("html")
     except Exception as e:
         logging.error(f"Erro ao gerar conteúdo com o Gemini: {e}")
