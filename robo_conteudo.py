@@ -61,16 +61,17 @@ def gerar_conteudo_com_gemini(api_key, transcricao_shorts=None):
     segmento_sorteado = random.choice(segmentos)
     
     prompt = (
-        f"Atue como um portal especializado em vagas de emprego para motoristas rodoviários no Brasil. "
-        f"Gere um artigo completo em HTML focado no setor de: '{segmento_sorteado}'. "
-        f"O artigo DEVE conter exatamente 3 oportunidades de emprego detalhadas para motoristas CNH D ou E. "
-        f"Para CADA vaga, você DEVE estruturar as seguintes informações obrigatoriamente utilizando HTML limpo: "
-        f"1. Nome da Transportadora e Localidade. "
-        f"2. Tipo de Veículo / Rota e Requisitos. "
-        f"3. Benefícios e Faixa Salarial estimada. "
-        f"4. ⚠️ CANAL DE CONTATO DIRETO OBRIGATÓRIO: Forneça explicitamente um e-mail de recrutamento (ex: rh@transportadora.com.br) ou número de WhatsApp corporativo para envio de currículos. NUNCA omita o contato. "
-        f"Utilize tags <h3> para os títulos das vagas, <ul> e <li> para os detalhes, e <p> para a descrição. "
-        f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (título chamativo para o blog) e 'html' (o código HTML completo do post)."
+        prompt = (
+        f"Atue como um especialista sênior em recursos humanos e logísticas do transporte rodoviário no Brasil. "
+        f"Escreva um artigo de orientacao profissional e guia de vagas focado no setor de: '{segmento_sorteado}'. "
+        f"O artigo DEVE destacar 3 grandes transportadoras REAIS e consolidadas no Brasil que atuam fortemente nesse setor. "
+        f"Para CADA empresa citada, estruture obrigatoriamente: "
+        f"1. Nome real da transportadora e sua atuação no mercado brasileiro. "
+        f"2. Tipo de frota e exigências comuns para os motoristas (ex: CNH E, MOPP, experiência). "
+        f"3. ⚠️ CANAL OFICIAL DE RECRUTAMENTO: Instrua o motorista a acessar a página oficial de 'Trabalhe Conosco' ou o site institucional real da empresa para cadastro de currículo (nunca crie e-mails falsos). "
+        f"Utilize tags <h3> para os títulos, <ul>/<li> para os detalhes e <p> para uma introdução e conclusão ricas em dicas de carreira. "
+        f"Retorne APENAS um objeto JSON válido contendo exatamente duas chaves: 'titulo' (título atrativo de guia de carreira) e 'html' (o código HTML completo)."
+    )
     )
     
     try:
