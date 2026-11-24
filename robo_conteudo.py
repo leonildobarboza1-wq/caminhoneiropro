@@ -1,10 +1,10 @@
 import os
 import sys
+import re
 import logging
 import urllib.request
 import urllib.parse
 import json
-import random
 from datetime import datetime, timedelta
 import zoneinfo
 
@@ -15,6 +15,7 @@ except ImportError:
     genai = None
 
 logging.basicConfig(level=logging.INFO)
+
 
 def obter_access_token(client_id, client_secret, refresh_token):
     url = "https://oauth2.googleapis.com/token"
@@ -34,6 +35,7 @@ def obter_access_token(client_id, client_secret, refresh_token):
         logging.error("Erro ao renovar o Access Token.")
         raise e
 
+
 def obter_imagem_sequencial():
     """Retorna as imagens em ordem sequencial estrita, garantindo que nunca repita a anterior."""
     urls_fixas = [
@@ -41,84 +43,96 @@ def obter_imagem_sequencial():
         "https://i.postimg.cc/kX9DzT7R/Gemini-Generated-Image-ewbdkeewbdkeewbd.jpg",  # Imagem 2
         "https://i.postimg.cc/s2tgccnX/imagens-caminao.jpg"                           # Imagem 3
     ]
-    
+
     fuso_br = zoneinfo.ZoneInfo("America/Sao_Paulo")
     dia_do_ano = datetime.now(fuso_br).timetuple().tm_yday
     indice = dia_do_ano % len(urls_fixas)
     return urls_fixas[indice]
 
-def gerar_conteudo_com_gemini(api_key):
+
+def gerar_conteudo_com_gemini(api_key, data_formatada, data_limite):
     if not genai:
         return None, None
-    
+
     client = genai.Client(api_key=api_key)
-    
-    segmentos = [
-        "Agronegócio e Grãos (Bitrem, Rodotrem, Caçamba)",
-        "Carga Geral e E-commerce (Baú, Sider, Truck)",
-        "Produtos Perigosos e Tanque (Combustíveis - MOPP)",
-        "Distribuição Urbana e Carga Leve (Toco, VUC)",
-        "Transporte de Cargas Pesadas e Excedentes (Prancha)"
-    ]
-    segmento_sorteado = random.choice(segmentos)
-    
-    prompt = (
-        f"Atue como um especialista sênior em RH e logística rodoviária. "
-        f"Escreva um guia de oportunidades para motoristas CNH D e E focado no setor de: '{segmento_sorteado}'. "
-        f"Você DEVE citar explicitamente 3 grandes empresas REAIS do Brasil neste setor. "
-        f"Para cada empresa, escreva o nome real dela, a exigência de frota e o canal oficial de recrutamento (ex: link Gupy ou portal Trabalhe Conosco). "
-        f"Retorne APENAS um JSON estrito contendo exatamente duas chaves: 'titulo' e 'html'. "
-        f"O valor de 'html' DEVE conter tags <h3> com o nome das empresas e <ul>/<li> detalhando os requisitos e o link de contato oficial."
-    )
-    
+
+    prompt = f"""
+Você é um especialista em recrutamento logístico e redator de conteúdo focado em motoristas profissionais no Brasil (CNH C, D e E, carreteiro, truck, toco, bitrem, cegonheiro, motorista de entrega).
+
+Sua missão hoje ({data_formatada}) é usar a Pesquisa Google para encontrar VAGAS REAIS E ATUAIS para motorista de caminhão no Brasil publicadas recentemente (entre {data_limite} e {data_formatada}).
+
+### REGRAS RIGOROSAS DE BUSCA E FILTRO
+1. **Recência obrigatória:** Busque vagas abertas e recentes em transportadoras reais, Gupy, PandaPé, InfoJobs, Catho, Vagas.com, LinkedIn, Indeed e canais oficiais de recrutamento. Descarte vagas antigas, expiradas ou suspeitas.
+2. **Dados reais e verificados:** NUNCA invente salários, benefícios, e-mails, telefones ou links. Se um dado (como salário) não estiver explícito na vaga encontrada, simplesmente omita esse item.
+3. **Dados mínimos por vaga:** Cada vaga deve conter:
+   - Cargo / Tipo de veículo (ex.: Motorista Carreteiro, Truck, Bitrem, Cegonheiro)
+   - Cidade e Estado (UF)
+   - Nome da Empresa / Transportadora
+   - Requisitos principais (ex.: CNH E, EAR, MOPP, experiência)
+   - Como se candidatar (e-mail, WhatsApp, site ou link oficial encontrado)
+4. **Quantidade:** Selecione de 8 a 12 vagas reais bem distribuídas pelo Brasil.
+
+### FORMATO DE SAÍDA OBRIGATÓRIO
+Retorne APENAS um objeto JSON válido (sem markdown ```json) com exatamente duas chaves: "titulo" e "html".
+- "titulo": Ex: "Vagas Atualizadas para Motorista de Caminhão no Brasil – {data_formatada}"
+- "html": HTML limpo pronto para Blogger contendo:
+  1. Um parágrafo `<p>` curto de introdução (2 a 3 linhas).
+  2. Para cada vaga, uma tag `<h3>` com `Cargo – Cidade/UF (Empresa)` seguida de `<ul>` com `<li><strong>Requisitos:</strong> ...</li>`, `<li><strong>Benefícios/Salário:</strong> ...</li>` (apenas se constar na fonte) e `<li><strong>Como se candidatar:</strong> ...</li>`.
+  3. Um parágrafo `<p>` final lembrando que as vagas podem encerrar a qualquer momento.
+"""
+
     try:
+        # Ativa a busca real no Google Search nativa do Gemini
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt,
-            config=types.GenerateContentConfig(response_mime_type="json")
+            config=types.GenerateContentConfig(
+                tools=[{"google_search": {}}],
+                temperature=0.2,
+            )
         )
-        texto_resposta = response.text.strip()
-        if texto_resposta.startswith("```json"):
-            texto_resposta = texto_resposta[7:]
-        if texto_resposta.endswith("```"):
-            texto_resposta = texto_resposta[:-3]
-            
-        dados = json.loads(texto_resposta.strip())
+
+        texto_resposta = (response.text or "").strip()
+
+        # Extrai o bloco JSON mesmo que venha cercado por crases ou texto auxiliar
+        match_json = re.search(r"\{.*\}", texto_resposta, flags=re.DOTALL)
+        if not match_json:
+            raise ValueError("Resposta do Gemini não conteve um JSON válido.")
+
+        dados = json.loads(match_json.group(0))
         titulo = dados.get("titulo")
         html = dados.get("html")
-        
-        # Se a IA retornar vazio, força um conteúdo real estruturado em vez de genérico
-        if not html or len(html) < 50:
-            raise ValueError("HTML retornado veio vazio ou muito curto.")
-            
+
+        if not html or "<h3>" not in html.lower() or len(html) < 150:
+            raise ValueError("HTML retornado veio vazio ou sem estrutura de vagas.")
+
         return titulo, html
+
     except Exception as e:
-        logging.error(f"Erro ao gerar com Gemini: {e}. Usando conteúdo padrão robusto com empresas reais.")
-        # Contingência rica com empresas reais caso a API falhe
-        titulo_fallback = f"Guia de Vagas e Grandes Frotas: Setor de {segmento_sorteado}"
+        logging.error(f"Erro ao buscar/gerar vagas reais com Gemini: {e}. Usando contingência.")
+        titulo_fallback = f"Oportunidades e Cadastro de Reserva para Motoristas CNH D e E – {data_formatada}"
         html_fallback = (
-            f"<h3>1. Tegma Gestão Logística</h3>"
-            f"<p>Referência em transporte de veículos e carga industrial.</p>"
-            f"<ul><li><strong>Requisitos:</strong> CNH E com EAR e experiência comprovada.</li>"
-            f"<li><strong>Como se candidatar:</strong> Acesse o portal oficial de recrutamento em <code>tegma.gupy.io</code>.</li></ul>"
-            f"<h3>2. JBS Transportes</h3>"
-            f"<p>Atuação forte no agronegócio, carnes e cargas frigorificadas.</p>"
-            f"<ul><li><strong>Requisitos:</strong> CNH D/E e disponibilidade para viagens estaduais/interestaduais.</li>"
-            f"<li><strong>Como se candidatar:</strong> Cadastre seu currículo na seção 'Trabalhe Conosco' no site oficial da JBS ou via Gupy.</li></ul>"
-            f"<h3>3. Raízen / Logística Rodoviária</h3>"
-            f"<p>Transporte de combustíveis, granéis e derivados.</p>"
-            f"<ul><li><strong>Requisitos:</strong> CNH E obrigatória e curso MOPP atualizado.</li>"
-            f"<li><strong>Como se candidatar:</strong> Envie seus dados através do canal oficial de carreiras da Raízen.</li></ul>"
+            "<p>Confira os canais oficiais de recrutamento aberto nas principais transportadoras do país:</p>"
+            "<h3>1. Tegma Gestão Logística – Brasil</h3>"
+            "<ul><li><strong>Requisitos:</strong> CNH E com EAR e experiência comprovada.</li>"
+            "<li><strong>Como se candidatar:</strong> Acesse o portal oficial em <code>tegma.gupy.io</code>.</li></ul>"
+            "<h3>2. JBS Transportes – Várias Regiões</h3>"
+            "<ul><li><strong>Requisitos:</strong> CNH D ou E e disponibilidade para viagens.</li>"
+            "<li><strong>Como se candidatar:</strong> Cadastre seu currículo no portal 'Trabalhe Conosco' da JBS ou via Gupy.</li></ul>"
+            "<h3>3. Transpanorama Transportes – Brasil</h3>"
+            "<ul><li><strong>Requisitos:</strong> CNH E com EAR e experiência em carreta/bitrem.</li>"
+            "<li><strong>Como se candidatar:</strong> Acesse o portal oficial <code>transpanorama.gupy.io</code>.</li></ul>"
         )
         return titulo_fallback, html_fallback
 
+
 def postar_no_blogger(blog_id, access_token, titulo, conteudo):
-    url = f"https://www.googleapis.com/blogger/v3/blogs/{blog_id}/posts/?isDraft=false"
+    url = f"[https://www.googleapis.com/blogger/v3/blogs/](https://www.googleapis.com/blogger/v3/blogs/){blog_id}/posts/?isDraft=false"
     payload = {
         "kind": "blogger#post",
         "title": titulo,
         "content": conteudo,
-        "labels": ["Guia de Carreira", "Motoristas", "Caminhoneiros", "Grandes Frotas"]
+        "labels": ["Vagas Motorista", "Caminhoneiros", "Emprego", "Logística"]
     }
     data = json.dumps(payload).encode('utf-8')
     headers = {
@@ -129,11 +143,12 @@ def postar_no_blogger(blog_id, access_token, titulo, conteudo):
     try:
         with urllib.request.urlopen(req) as response:
             res_data = json.loads(response.read().decode('utf-8'))
-            logging.info(f"Post publicado com sucesso! ID: {res_data.get('id')}")
+            logging.info(f"Post publicado com sucesso! ID: {res_data.get('id')} | URL: {res_data.get('url')}")
             return True
     except Exception as e:
         logging.error("Erro ao postar no Blogger.")
         raise e
+
 
 def main():
     blog_id = os.getenv('BLOG_ID')
@@ -141,7 +156,7 @@ def main():
     client_id = os.getenv('BLOGGER_CLIENT_ID')
     client_secret = os.getenv('BLOGGER_CLIENT_SECRET')
     refresh_token = os.getenv('BLOGGER_REFRESH_TOKEN')
-    
+
     if not all([blog_id, api_key_gemini, client_id, client_secret, refresh_token]):
         logging.error("Secrets em falta nas configurações do GitHub.")
         sys.exit(1)
@@ -149,27 +164,16 @@ def main():
     fuso_br = zoneinfo.ZoneInfo("America/Sao_Paulo")
     agora = datetime.now(fuso_br)
     data_formatada = agora.strftime("%d/%m/%Y")
-    data_limite = (agora - timedelta(days=7)).strftime("%d/%m/%Y")
+    data_limite = (agora - timedelta(days=3)).strftime("%d/%m/%Y")
 
-    titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini)
+    titulo_ia, html_ia = gerar_conteudo_com_gemini(api_key_gemini, data_formatada, data_limite)
 
-    if not html_ia:
-        logging.warning("Conteúdo da IA veio vazio. Aplicando estrutura de contingência.")
-        titulo_ia = f"Guia de Oportunidades para Caminhoneiros nas Maiores Frotas - {data_formatada}"
-        html_ia = (
-            "<h3>Guia de Recrutamento: Grandes Frotas Nacionais</h3>"
-            "<p>Grandes transportadoras do país mantêm cadastros abertos para motoristas CNH D e E.</p>"
-            "<ul><li><strong>Requisitos Padrão:</strong> CNH válida com EAR e experiência comprovada.</li>"
-            "<li><strong>Como se candidatar:</strong> Acesse os portais oficiais de 'Trabalhe Conosco' das transportadoras líderes de mercado.</li></ul>"
-        )
-
-    titulo_final = titulo_ia if titulo_ia else f"Guia de Vagas para Caminhoneiros - {data_formatada}"
-    
+    titulo_final = titulo_ia if titulo_ia else f"Vagas para Motorista de Caminhão no Brasil – {data_formatada}"
     imagem_url = obter_imagem_sequencial()
 
     aviso_validade = f'''
     <div style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin-bottom: 20px; font-size: 14px; color: #856404;">
-        <strong>⚠️ Aviso importante sobre os prazos:</strong> Guia de oportunidades referente à semana de <strong>{data_limite}</strong> a <strong>{data_formatada}</strong>. Oportunidades em grandes frotas possuem fluxo constante de captação de talentos.
+        <strong>⚠️ Aviso importante sobre os prazos:</strong> Levantamento de vagas divulgadas entre <strong>{data_limite}</strong> e <strong>{data_formatada}</strong>. Vagas de motorista preenchem rápido — envie seu currículo o quanto antes e nunca pague taxas para participar de processos seletivos.
     </div>
     '''
 
@@ -181,7 +185,7 @@ def main():
 
     botao_grupo = '''
     <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
-        <a href="https://www.facebook.com/groups/1162878270485862" target="_blank" style="background-color: #1877f2; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: bold; border-radius: 5px; font-size: 16px; display: inline-block;">
+        <a href="[https://www.facebook.com/groups/1162878270485862](https://www.facebook.com/groups/1162878270485862)" target="_blank" style="background-color: #1877f2; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: bold; border-radius: 5px; font-size: 16px; display: inline-block;">
             👉 Participe do Nosso Grupo Oficial de Vagas no Facebook
         </a>
     </div>
@@ -191,6 +195,7 @@ def main():
 
     access_token = obter_access_token(client_id, client_secret, refresh_token)
     postar_no_blogger(blog_id, access_token, titulo_final, conteudo_final)
+
 
 if __name__ == '__main__':
     main()
