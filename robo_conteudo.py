@@ -66,16 +66,26 @@ def gerar_conteudo_com_gemini(api_key, data_formatada, data_limite):
     ]
     segmento_sorteado = random.choice(segmentos)
 
-    prompt = (
-        f"Atue como um especialista sênior em RH e logística rodoviária. "
-        f"Hoje é {data_formatada}. Use a Pesquisa Google para buscar vagas reais e recentes "
-        f"(entre {data_limite} e {data_formatada}) para motoristas CNH D e E no Brasil, "
-        f"com foco em: '{segmento_sorteado}'. "
-        f"Cite empresas reais, cidade/UF quando disponível, exigência de frota/CNH e canal oficial de candidatura. "
-        f"Não invente contatos ou valores que não apareçam nos resultados. "
-        f"Retorne APENAS um JSON estrito com exatamente duas chaves: 'titulo' e 'html'. "
-        f"Em 'html', use tags <h3> com o nome da empresa/vaga e <ul>/<li> com requisitos e canal de candidatura."
-    )
+    prompt = f"""
+Você é um especialista sênior em RH e logística rodoviária no Brasil.
+Hoje é {data_formatada}. Use a Pesquisa Google para encontrar até 10 vagas REAIS e RECENTES (divulgadas entre {data_limite} e {data_formatada}) para motoristas profissionais (CNH C, D ou E: carreteiro, truck, toco, bitrem, cegonheiro, entregas) no Brasil, com foco principal em '{segmento_sorteado}', mas incluindo outras regiões do país para alcançar até 10 oportunidades válidas.
+
+### REGRAS RIGOROSAS
+1. **Apenas vagas reais e recentes:** Priorize transportadoras reais, Gupy, PandaPé, InfoJobs, Catho, Vagas.com, LinkedIn, Indeed e páginas oficiais de recrutamento. Descarte vagas antigas, expiradas, links suspeitos ou golpes com cobrança de taxa.
+2. **Zero invenção de dados:** NUNCA invente salários, valores, benefícios, e-mails, telefones ou links. Se o salário ou benefício não aparecer na fonte, omita a linha de ganhos/benefícios daquela vaga.
+3. **Estrutura de cada vaga (igual ao modelo):**
+   - Título da vaga em `<h3>`: `N. Empresa – Cargo / Tipo de Caminhão (Cidade - UF ou Região)`
+   - Lista `<ul>` com itens `<li>` usando `<strong>`:
+     * `<strong>Base / Rotas:</strong> ...` (apenas se houver base específica ou rotas citadas na vaga)
+     * `<strong>Requisitos:</strong> CNH, escolaridade, cursos (MOPP, EAR, direção defensiva), experiência e disponibilidade`
+     * `<strong>Ganhos e Benefícios:</strong> ...` (apenas se constar na vaga encontrada)
+     * `<strong>Candidatura:</strong> E-mail, WhatsApp, portal ou link oficial encontrado na busca`
+
+### FORMATO DE SAÍDA OBRIGATÓRIO
+Retorne APENAS um JSON estrito com exatamente duas chaves: "titulo" e "html".
+- "titulo": Ex: "10 Oportunidades para Motoristas – Brasil (Atualizado {data_formatada})"
+- "html": Comece com um `<p>` curto de introdução (2 a 3 linhas), liste as vagas encontradas (até 10) no formato `<h3>` + `<ul><li>`, e finalize com um `<p>` curto orientando a conferir os dados oficiais no canal de candidatura e colocar o nome da vaga e cidade no assunto ou primeira mensagem.
+"""
 
     try:
         response = client.models.generate_content(
@@ -96,26 +106,24 @@ def gerar_conteudo_com_gemini(api_key, data_formatada, data_limite):
         titulo = dados.get("titulo")
         html = dados.get("html")
 
-        if not html or len(html) < 50:
-            raise ValueError("HTML retornado veio vazio ou muito curto.")
+        if not html or "<h3>" not in html.lower() or len(html) < 150:
+            raise ValueError("HTML retornado veio vazio ou sem estrutura de vagas.")
 
         return titulo, html
     except Exception as e:
         logging.error(f"Erro ao gerar com Gemini: {e}. Usando conteúdo padrão robusto.")
-        titulo_fallback = f"Guia de Vagas e Grandes Frotas: Setor de {segmento_sorteado}"
+        titulo_fallback = f"Oportunidades e Grandes Frotas para Motoristas – {data_formatada}"
         html_fallback = (
-            "<h3>1. Tegma Gestão Logística</h3>"
-            "<p>Referência em transporte de veículos e carga industrial.</p>"
-            "<ul><li><strong>Requisitos:</strong> CNH E com EAR e experiência comprovada.</li>"
-            "<li><strong>Como se candidatar:</strong> Acesse o portal oficial de recrutamento em <code>tegma.gupy.io</code>.</li></ul>"
-            "<h3>2. JBS Transportes</h3>"
-            "<p>Atuação forte no agronegócio, carnes e cargas frigorificadas.</p>"
-            "<ul><li><strong>Requisitos:</strong> CNH D/E e disponibilidade para viagens estaduais/interestaduais.</li>"
-            "<li><strong>Como se candidatar:</strong> Cadastre seu currículo na seção 'Trabalhe Conosco' no site oficial da JBS ou via Gupy.</li></ul>"
-            "<h3>3. Raízen / Logística Rodoviária</h3>"
-            "<p>Transporte de combustíveis, granéis e derivados.</p>"
-            "<ul><li><strong>Requisitos:</strong> CNH E obrigatória e curso MOPP atualizado.</li>"
-            "<li><strong>Como se candidatar:</strong> Envie seus dados através do canal oficial de carreiras da Raízen.</li></ul>"
+            "<p>Confira canais oficiais de recrutamento de transportadoras com operação ativa no Brasil:</p>"
+            "<h3>1. Tegma Gestão Logística – Brasil</h3>"
+            "<ul><li><strong>Requisitos:</strong> CNH Categoria E com EAR e experiência comprovada.</li>"
+            "<li><strong>Candidatura:</strong> Portal oficial em <code>tegma.gupy.io</code>.</li></ul>"
+            "<h3>2. JBS Transportes – Várias Regiões</h3>"
+            "<ul><li><strong>Requisitos:</strong> CNH Categoria D ou E e disponibilidade para viagens.</li>"
+            "<li><strong>Candidatura:</strong> Portal Trabalhe Conosco oficial da JBS ou Gupy.</li></ul>"
+            "<h3>3. Transpanorama Transportes – Brasil</h3>"
+            "<ul><li><strong>Requisitos:</strong> CNH Categoria E com EAR e experiência em carreta/bitrem.</li>"
+            "<li><strong>Candidatura:</strong> Portal oficial em <code>transpanorama.gupy.io</code>.</li></ul>"
         )
         return titulo_fallback, html_fallback
 
