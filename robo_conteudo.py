@@ -32,16 +32,16 @@ def obter_access_token(client_id, client_secret, refresh_token):
             res_data = json.loads(response.read().decode('utf-8'))
             return res_data['access_token']
     except Exception as e:
-        logging.error("Erro ao renovar o Access Token.")
+        logging.error(f"Erro ao renovar o Access Token: {e}")
         raise e
 
 
 def obter_imagem_sequencial():
     """Retorna as imagens em ordem sequencial estrita, garantindo que nunca repita a anterior."""
     urls_fixas = [
-        "https://i.postimg.cc/gj3XR5mV/Gemini-Generated-Image-7atb0f7atb0f7atb.jpg",  # Imagem 1
-        "https://i.postimg.cc/kX9DzT7R/Gemini-Generated-Image-ewbdkeewbdkeewbd.jpg",  # Imagem 2
-        "https://i.postimg.cc/s2tgccnX/imagens-caminao.jpg"                           # Imagem 3
+        "https://i.postimg.cc/gj3XR5mV/Gemini-Generated-Image-7atb0f7atb0f7atb.jpg",
+        "https://i.postimg.cc/kX9DzT7R/Gemini-Generated-Image-ewbdkeewbdkeewbd.jpg",
+        "https://i.postimg.cc/s2tgccnX/imagens-caminao.jpg"
     ]
 
     fuso_br = zoneinfo.ZoneInfo("America/Sao_Paulo")
@@ -82,7 +82,6 @@ Retorne APENAS um objeto JSON válido (sem markdown ```json) com exatamente duas
 """
 
     try:
-        # Ativa a busca real no Google Search nativa do Gemini
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt,
@@ -94,7 +93,6 @@ Retorne APENAS um objeto JSON válido (sem markdown ```json) com exatamente duas
 
         texto_resposta = (response.text or "").strip()
 
-        # Extrai o bloco JSON mesmo que venha cercado por crases ou texto auxiliar
         match_json = re.search(r"\{.*\}", texto_resposta, flags=re.DOTALL)
         if not match_json:
             raise ValueError("Resposta do Gemini não conteve um JSON válido.")
@@ -146,7 +144,7 @@ def postar_no_blogger(blog_id, access_token, titulo, conteudo):
             logging.info(f"Post publicado com sucesso! ID: {res_data.get('id')} | URL: {res_data.get('url')}")
             return True
     except Exception as e:
-        logging.error("Erro ao postar no Blogger.")
+        logging.error(f"Erro ao postar no Blogger: {e}")
         raise e
 
 
